@@ -4,8 +4,16 @@ export function notFound(req, res, _next) {
 
 export function errorHandler(err, _req, res, _next) {
   console.error('[ERROR]', err);
-  const status = err.statusCode || 500;
+  const prismaCode = err.code || err.errorCode;
+  const databaseUnavailable = prismaCode === 'P1001'
+    || prismaCode === 'P1017'
+    || err.message?.includes("Can't reach database server");
+  const status = databaseUnavailable ? 503 : (err.statusCode || 500);
+  const message = databaseUnavailable
+    ? 'Database unavailable. Start PostgreSQL and try again.'
+    : (err.message || 'Internal server error');
+
   res.status(status).json({
-    error: err.message || 'Internal server error',
+    error: message,
   });
 }
